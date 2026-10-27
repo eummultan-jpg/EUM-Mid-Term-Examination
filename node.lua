@@ -45,6 +45,45 @@ local function fit(text, f, size, maxw)
     return text .. "…"
 end
 
+-- Keep complete course titles visible by wrapping them to two lines.
+-- The font is reduced when required instead of adding an ellipsis.
+local function wrap_two_lines(text, f, maxw, preferred_size, min_size)
+    text = trim(text)
+    preferred_size = preferred_size or 20
+    min_size = min_size or 13
+
+    for size = preferred_size, min_size, -1 do
+        local lines = {}
+        local current = ""
+
+        for _, w in ipairs(words(text)) do
+            local candidate = (current == "" and w or current .. " " .. w)
+            if f:width(candidate, size) <= maxw then
+                current = candidate
+            else
+                if current ~= "" then lines[#lines + 1] = current end
+                current = w
+            end
+        end
+        if current ~= "" then lines[#lines + 1] = current end
+
+        if #lines <= 2 then return lines, size end
+    end
+
+    -- Fallback: preserve all words at the minimum readable size.
+    local size = min_size
+    local line1, line2 = "", ""
+    for _, w in ipairs(words(text)) do
+        local candidate = (line1 == "" and w or line1 .. " " .. w)
+        if line2 == "" and f:width(candidate, size) <= maxw then
+            line1 = candidate
+        else
+            line2 = (line2 == "" and w or line2 .. " " .. w)
+        end
+    end
+    return {line1, line2}, size
+end
+
 local PKT_OFFSET_SECONDS = 5 * 60 * 60
 
 local function pkt_time()
@@ -233,14 +272,37 @@ local function draw_status_card(x, y, w, h, title, color, e, is_now)
     rect(x, y, w, h, 0.97, 0.985, 1.00, 1)
     rect(x, y, w, 62, color[1], color[2], color[3], 1)
     bold:write(x + 26, y + 17, title, 27, 1, 1, 1, 1)
+
     if not e then
-        bold:write(x + 28, y + 92, is_now and "NO EXAM NOW" or "NO MORE EXAMS", 27, 0.12, 0.20, 0.32, 1)
+        bold:write(x + 28, y + 94, is_now and "NO EXAM NOW" or "NO MORE EXAMS",
+            27, 0.12, 0.20, 0.32, 1)
         return
     end
-    bold:write(x + 28, y + 88, fit(e.code .. "  —  " .. e.course, bold, 27, w - 56), 27, 0.05, 0.12, 0.22, 1)
-    font:write(x + 28, y + 132, e.date_label .. "  •  " .. e.time, 20, 0.12, 0.25, 0.38, 1)
-    font:write(x + 28, y + 164, "ROOM  " .. (e.room ~= "" and e.room or "—"), 20, 0.04, 0.30, 0.55, 1)
-    font:write(x + 28, y + 195, fit(e.invigilator, font, 18, w - 56), 18, 0.20, 0.28, 0.38, 1)
+
+    local title_text = trim((e.code ~= "" and e.code .. " — " or "") .. e.course)
+    local title_lines, title_size = wrap_two_lines(title_text, bold, w - 56, 27, 17)
+
+    bold:write(x + 28, y + 82, title_lines[1] or "", title_size,
+        0.05, 0.12, 0.22, 1)
+    if title_lines[2] then
+        bold:write(x + 28, y + 82 + title_size + 5, title_lines[2], title_size,
+            0.05, 0.12, 0.22, 1)
+    end
+
+    local meta_y = y + 82 + (title_lines[2] and title_size + 36 or title_size + 15)
+    font:write(x + 28, meta_y, e.date_label .. "  •  " .. e.time,
+        20, 0.12, 0.25, 0.38, 1)
+    font:write(x + 28, meta_y + 32, "ROOM  " .. (e.room ~= "" and e.room or "—"),
+        20, 0.04, 0.30, 0.55, 1)
+
+    local inv = e.invigilator ~= "" and ("INVIGILATOR: " .. e.invigilator) or "INVIGILATOR: —"
+    font:write(x + 28, meta_y + 64, fit(inv, font, 18, w - 56),
+        18, 0.20, 0.28, 0.38, 1)
+
+    if e.students ~= "" then
+        font:write(x + 28, meta_y + 94, "STUDENTS: " .. tostring(e.students),
+            18, 0.20, 0.28, 0.38, 1)
+    end
 end
 
 function node.render()
@@ -329,13 +391,21 @@ function node.render()
 
             center(font, leftX, y + rowH/2 - 10, c1, e.date_label, 18, 0.05, 0.12, 0.22, 1)
             center(font, leftX + c1, y + rowH/2 - 10, c2, e.time, 17, 0.05, 0.12, 0.22, 1)
-            bold:write(leftX + c1 + c2 + 12, y + 12, fit(e.code .. " — " .. e.course, bold, 18, c3 - 24), 18, 0.04, 0.12, 0.22, 1)
+            local course_lines, course_size = wrap_two_lines(
+                e.code .. " — " .. e.course, bold, c3 - 24, 18, 14)
+            local course_y = y + (course_lines[2] and 8 or math.floor((rowH - course_size) / 2))
+            bold:write(leftX + c1 + c2 + 12, course_y,
+                course_lines[1] or "", course_size, 0.04, 0.12, 0.22, 1)
+            if course_lines[2] then
+                bold:write(leftX + c1 + c2 + 12, course_y + course_size + 5,
+                    course_lines[2], course_size, 0.04, 0.12, 0.22, 1)
+            end
             center(font, leftX + c1 + c2 + c3, y + rowH/2 - 10, c4, fit(e.room, font, 17, c4 - 12), 17, 0.05, 0.27, 0.48, 1)
         end
     end
 
     draw_status_card(rightX, 330, rightW, 220, "NOW  •  CURRENT EXAM", {0.02,0.48,0.29}, cur, true)
-    draw_status_card(rightX, 565, rightW, 220, "NEXT  •  UPCOMING EXAM", {0.03,0.38,0.72}, nxt, false)
+    draw_status_card(rightX, 565, rightW, 300, "NEXT  •  UPCOMING EXAM", {0.03,0.38,0.72}, nxt, false)
 
     rect(0, H - 82, W, 82, 0.02, 0.16, 0.32, 1)
     bold:write(35, H - 57, "UPCOMING SECTIONS", 20, 1, 1, 1, 1)
