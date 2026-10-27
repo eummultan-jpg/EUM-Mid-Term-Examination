@@ -2,6 +2,7 @@ gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
 
 local font = resource.load_font("font.ttf")
 local bold = resource.load_font("font-bold.ttf")
+local logo = resource.load_image("logo.png")
 
 local data = {}
 local cfg = { family = "ALL", rotation_seconds = 12 }
@@ -44,13 +45,36 @@ local function fit(text, f, size, maxw)
     return text .. "…"
 end
 
+local PKT_OFFSET_SECONDS = 5 * 60 * 60
+
+local function pkt_time()
+    -- Read the system clock as UTC and explicitly convert to Pakistan Standard Time (UTC+5).
+    return os.date("!*t", os.time() + PKT_OFFSET_SECONDS)
+end
+
 local function minute_now()
-    local t = os.date("*t")
+    local t = pkt_time()
     return t.hour * 60 + t.min
 end
 
 local function date_iso_now()
-    return os.date("%Y-%m-%d")
+    local t = pkt_time()
+    return string.format("%04d-%02d-%02d", t.year, t.month, t.day)
+end
+
+local months = {
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+}
+
+local function pkt_date_label(t)
+    return string.format("%02d %s %04d", t.day, months[t.month], t.year)
+end
+
+local function pkt_time_label(t)
+    local hour = t.hour % 12
+    if hour == 0 then hour = 12 end
+    return string.format("%02d:%02d:%02d %s", hour, t.min, t.sec, t.hour >= 12 and "PM" or "AM")
 end
 
 local function rebuild_sections()
@@ -224,18 +248,15 @@ function node.render()
     gl.clear(0.94, 0.96, 0.98, 1)
 
     local section = current_section()
-    local t = os.date("*t")
+    local t = pkt_time()
     local day = days[t.wday]
-    local time_str = os.date("%I:%M:%S %p")
+    local time_str = pkt_time_label(t)
 
     rect(0, 0, W, 165, 0.98, 0.99, 1.00, 1)
     rect(0, 160, W, 7, 0.98, 0.73, 0.10, 1)
 
-    rect(35, 28, 105, 105, 0.04, 0.20, 0.40, 1)
-    rect(43, 36, 89, 89, 0.98, 0.99, 1.00, 1)
-    rect(51, 44, 73, 73, 0.04, 0.20, 0.40, 1)
-    center(bold, 51, 61, 73, "EUM", 27, 1, 1, 1, 1)
-    center(font, 51, 94, 73, "MULTAN", 11, 0.95, 0.78, 0.18, 1)
+    -- Official Emerson University Multan seal with transparent background.
+    logo:draw(35, 18, 145, 148)
 
     bold:write(165, 31, "EMERSON UNIVERSITY MULTAN", 43, 0.03, 0.15, 0.30, 1)
     font:write(166, 88, "FACULTY OF COMPUTING & EMERGING TECHNOLOGIES", 25, 0.08, 0.24, 0.42, 1)
@@ -243,7 +264,7 @@ function node.render()
     local date_x = W - 570
     rect(date_x, 0, 570, 160, 0.04, 0.23, 0.46, 1)
     bold:write(date_x + 38, 27, day, 27, 1, 1, 1, 1)
-    bold:write(date_x + 38, 61, os.date("%d %B %Y"), 25, 1, 1, 1, 1)
+    bold:write(date_x + 38, 61, pkt_date_label(t), 25, 1, 1, 1, 1)
     line(date_x + 285, 27, date_x + 285, 132, 2, 0.55, 0.70, 0.88, 1)
     bold:write(date_x + 315, 44, time_str, 31, 1, 1, 1, 1)
     font:write(date_x + 315, 91, "LIVE CLOCK", 17, 0.70, 0.88, 1, 1)
