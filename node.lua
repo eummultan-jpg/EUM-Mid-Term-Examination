@@ -274,34 +274,52 @@ local function draw_status_card(x, y, w, h, title, color, e, is_now)
     bold:write(x + 26, y + 17, title, 27, 1, 1, 1, 1)
 
     if not e then
-        bold:write(x + 28, y + 94, is_now and "NO EXAM NOW" or "NO MORE EXAMS",
+        bold:write(x + 28, y + 88, is_now and "NO EXAM NOW" or "NO MORE EXAMS",
             27, 0.12, 0.20, 0.32, 1)
+        if is_now then
+            font:write(x + 28, y + 132, "There is no examination in progress.",
+                18, 0.32, 0.39, 0.48, 1)
+            font:write(x + 28, y + 164, "The next scheduled examination is shown below.",
+                18, 0.32, 0.39, 0.48, 1)
+        end
         return
     end
 
+    -- Both NOW and NEXT cards use the same complete examination details.
     local title_text = trim((e.code ~= "" and e.code .. " — " or "") .. e.course)
-    local title_lines, title_size = wrap_two_lines(title_text, bold, w - 56, 27, 17)
+    local title_lines, title_size = wrap_two_lines(title_text, bold, w - 56, 25, 17)
 
     bold:write(x + 28, y + 82, title_lines[1] or "", title_size,
         0.05, 0.12, 0.22, 1)
     if title_lines[2] then
-        bold:write(x + 28, y + 82 + title_size + 5, title_lines[2], title_size,
+        bold:write(x + 28, y + 82 + title_size + 4, title_lines[2], title_size,
             0.05, 0.12, 0.22, 1)
     end
 
-    local meta_y = y + 82 + (title_lines[2] and title_size + 36 or title_size + 15)
-    font:write(x + 28, meta_y, e.date_label .. "  •  " .. e.time,
-        20, 0.12, 0.25, 0.38, 1)
-    font:write(x + 28, meta_y + 32, "ROOM  " .. (e.room ~= "" and e.room or "—"),
-        20, 0.04, 0.30, 0.55, 1)
+    local meta_y = y + 82 + (title_lines[2] and title_size + 34 or title_size + 13)
 
-    local inv = e.invigilator ~= "" and ("INVIGILATOR: " .. e.invigilator) or "INVIGILATOR: —"
-    font:write(x + 28, meta_y + 64, fit(inv, font, 18, w - 56),
-        18, 0.20, 0.28, 0.38, 1)
+    -- Date / time
+    font:write(x + 28, meta_y, "DATE:  " .. e.date_label,
+        18, 0.12, 0.25, 0.38, 1)
+    font:write(x + 28, meta_y + 29, "TIME:  " .. e.time,
+        18, 0.12, 0.25, 0.38, 1)
 
+    -- Room
+    font:write(x + 28, meta_y + 58,
+        "ROOM:  " .. (e.room ~= "" and e.room or "—"),
+        18, 0.04, 0.30, 0.55, 1)
+
+    -- Invigilator
+    local inv = e.invigilator ~= "" and e.invigilator or "—"
+    font:write(x + 28, meta_y + 87,
+        fit("INVIGILATOR:  " .. inv, font, 17, w - 56),
+        17, 0.20, 0.28, 0.38, 1)
+
+    -- Students
     if e.students ~= "" then
-        font:write(x + 28, meta_y + 94, "STUDENTS: " .. tostring(e.students),
-            18, 0.20, 0.28, 0.38, 1)
+        font:write(x + 28, meta_y + 116,
+            "STUDENTS:  " .. tostring(e.students),
+            17, 0.20, 0.28, 0.38, 1)
     end
 end
 
