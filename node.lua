@@ -404,29 +404,45 @@ function node.render()
         end
     end
 
-    draw_status_card(rightX, 330, rightW, 220, "NOW  •  CURRENT EXAM", {0.02,0.48,0.29}, cur, true)
-    draw_status_card(rightX, 565, rightW, 300, "NEXT  •  UPCOMING EXAM", {0.03,0.38,0.72}, nxt, false)
+    draw_status_card(rightX, 330, rightW, 300, "NOW  •  CURRENT EXAM", {0.02,0.48,0.29}, cur, true)
+    draw_status_card(rightX, 645, rightW, 300, "NEXT  •  UPCOMING EXAM", {0.03,0.38,0.72}, nxt, false)
 
-    rect(0, H - 82, W, 82, 0.02, 0.16, 0.32, 1)
-    bold:write(35, H - 57, "UPCOMING SECTIONS", 20, 1, 1, 1, 1)
-    local bx = 260
+    -- Final footer: dark navy full-width bar matching the approved reference design.
+    local footerH = 100
+    rect(0, H - footerH, W, footerH, 0.02, 0.13, 0.30, 1)
+
+    -- Two-line footer heading on the left.
+    bold:write(48, H - 72, "UPCOMING", 22, 1, 1, 1, 1)
+    bold:write(48, H - 43, "SECTIONS:", 22, 1, 1, 1, 1)
+
+    -- Section pills: selected section is yellow, others are blue.
+    local bx = 215
+    local bw = 158
+    local gap = 14
     local shown = math.min(#sections, 6)
     for i = 1, shown do
         local idx = section_index + i - 1
         while idx > #sections do idx = idx - #sections end
         local s = sections[idx]
-        local label = fit(s.id or s.name or "", bold, 16, 120)
-        local bw = 135
+        local label = fit(s.id or s.name or "", bold, 17, bw - 18)
         local active = (idx == section_index)
-        rect(bx, H - 66, bw, 45,
+
+        rect(bx, H - 78, bw, 54,
             active and 0.99 or 0.05,
             active and 0.72 or 0.25,
             active and 0.10 or 0.45, 1)
-        center(bold, bx, H - 54, bw, label, 16,
+
+        center(bold, bx, H - 64, bw, label, 17,
             active and 0.03 or 1,
             active and 0.12 or 1,
             active and 0.22 or 1, 1)
-        bx = bx + bw + 10
+
+        bx = bx + bw + gap
     end
-    font:write(W - 285, H - 57, "POWERED BY IT CENTER", 18, 1, 1, 1, 1)
+
+    -- Divider before the IT Center credit.
+    local dividerX = W - 390
+    line(dividerX, H - 78, dividerX, H - 22, 2, 0.62, 0.72, 0.86, 1)
+
+    bold:write(dividerX + 38, H - 63, "POWERED BY IT CENTER", 20, 1, 1, 1, 1)
 end
