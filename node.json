@@ -1,0 +1,28 @@
+{
+  "name": "EUM Mid Term Examination",
+  "options": [
+    {
+      "title": "Program family",
+      "name": "family",
+      "type": "string",
+      "default": "ALL",
+      "hint": "Use ALL for automatic rotation through all examination groups, or enter one program family name exactly as listed in exam.json."
+    },
+    {
+      "title": "Rotation seconds",
+      "name": "rotation_seconds",
+      "type": "string",
+      "default": "12",
+      "hint": "How long each examination section remains on screen (5\u2013120 seconds)."
+    }
+  ],
+  "presets": {
+    "allprograms": {
+      "desc": "Rotate automatically through all examination groups.",
+      "config": {
+        "family": "ALL",
+        "rotation_seconds": "12"
+      }
+    }
+  }
+}
