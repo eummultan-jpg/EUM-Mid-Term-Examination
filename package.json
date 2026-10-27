@@ -2,7 +2,7 @@
   "name": "EUM Mid Term Examination",
   "author": "Emerson University Multan",
   "desc": "Professional automatic Mid Term Examination date-sheet display for Emerson University Multan.",
-  "version": "1.3",
+  "version": "1.4",
   "lifecycle": "production",
   "platforms": [
     "pi/epoch-1",
@@ -13,6 +13,6 @@
   },
   "offline": {
     "support": "yes",
-    "info": "Exam data, fonts and university logo are bundled in the package; the display works offline after installation."
+    "info": "Exam data is bundled in the package; the display works offline after installation."
   }
 }
