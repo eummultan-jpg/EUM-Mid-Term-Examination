@@ -268,6 +268,38 @@ local function center(f, x, y, w, text, size, r, g, b, a)
     f:write(x + (w - f:width(text, size)) / 2, y, text, size, r, g, b, a or 1)
 end
 
+
+local function countdown_label(e, is_now)
+    if not e then return "" end
+    local today = date_iso_now()
+    local now = minute_now()
+    if is_now and e.date == today and e.end_min then
+        local remaining = math.max(0, e.end_min - now)
+        return string.format("TIME LEFT: %02d MIN", remaining)
+    end
+    if not is_now and e.start_min then
+        if e.date == today then
+            local remaining = math.max(0, e.start_min - now)
+            return string.format("STARTS IN: %02d MIN", remaining)
+        end
+        local y, m, d = e.date:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)$")
+        if y then
+            local now_t = pkt_time()
+            local now_midnight = os.time({year=now_t.year, month=now_t.month, day=now_t.day, hour=0, min=0, sec=0})
+            local exam_midnight = os.time({year=tonumber(y), month=tonumber(m), day=tonumber(d), hour=0, min=0, sec=0})
+            local days = math.max(0, math.floor((exam_midnight - now_midnight) / 86400 + 0.5))
+            local minutes = e.start_min
+            local hours = math.floor(minutes / 60)
+            local mins = minutes % 60
+            if days == 0 then
+                return string.format("STARTS IN: %02d:%02d", math.max(0, hours - now_t.hour), mins)
+            end
+            return string.format("STARTS IN: %d DAY%s", days, days == 1 and "" or "S")
+        end
+    end
+    return ""
+end
+
 local function draw_status_card(x, y, w, h, title, color, e, is_now)
     rect(x, y, w, h, 0.97, 0.985, 1.00, 1)
     rect(x, y, w, 62, color[1], color[2], color[3], 1)
@@ -320,6 +352,19 @@ local function draw_status_card(x, y, w, h, title, color, e, is_now)
         font:write(x + 28, meta_y + 116,
             "STUDENTS:  " .. tostring(e.students),
             17, 0.20, 0.28, 0.38, 1)
+    end
+
+    local countdown = countdown_label(e, is_now)
+    if countdown ~= "" then
+        local badge_y = y + h - 42
+        rect(x + 20, badge_y - 5, w - 40, 30,
+            is_now and 0.88 or 0.86,
+            is_now and 0.96 or 0.93,
+            is_now and 0.91 or 1.00, 1)
+        bold:write(x + 32, badge_y, countdown, 16,
+            is_now and 0.02 or 0.03,
+            is_now and 0.40 or 0.30,
+            is_now and 0.23 or 0.62, 1)
     end
 end
 
@@ -423,7 +468,7 @@ function node.render()
     end
 
     draw_status_card(rightX, 330, rightW, 300, "NOW  •  CURRENT EXAM", {0.02,0.48,0.29}, cur, true)
-    draw_status_card(rightX, 645, rightW, 300, "NEXT  •  UPCOMING EXAM", {0.03,0.38,0.72}, nxt, false)
+    draw_status_card(rightX, 645, rightW, 300, "NEXT  •  UPCOMING EXAM (NEXT SLOT)", {0.03,0.38,0.72}, nxt, false)
 
     -- Final footer: dark navy full-width bar matching the approved reference design.
     local footerH = 100
